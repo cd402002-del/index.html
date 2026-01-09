@@ -83,149 +83,52 @@
         </div>
     </div>
 
-    <script>
-        let codigoSimulado = "";
-        let cliquesSair = 0;
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
-        // --- VALIDAÇÃO GMAIL ---
-        function abrirJanelaGmail() {
-            document.getElementById('backdrop').style.display = 'block';
-            document.getElementById('modal-gmail').style.display = 'block';
-            document.getElementById('gmail-passo-1').style.display = 'block';
-            document.getElementById('gmail-passo-2').style.display = 'none';
-        }
+<script>
+  // Inicializa o bot com sua chave pública
+  (function() {
+      emailjs.init("SUA_PUBLIC_KEY_AQUI"); 
+  })();
 
-function enviarCodigo() {
-    const email = document.getElementById('input-gmail').value.trim();
-    const btn = document.querySelector("#gmail-passo-1 button");
-    
-    // 1. Validação de formato rigorosa
-    const regexGmail = /^[a-z0-9](\.?[a-z0-9]){4,}@gmail\.com$/;
-    // Explicação: Precisa ter pelo menos 5 letras/números antes do @gmail.com
+  function enviarCodigo() {
+      const email = document.getElementById('input-gmail').value.trim();
+      const btn = document.querySelector("#gmail-passo-1 button");
 
-    if (!regexGmail.test(email)) {
-        alert("Erro: O Gmail deve ter pelo menos 5 caracteres antes do @ e ser apenas letras/números.");
-        return;
-    }
+      // Validação rigorosa que criamos
+      const regexGmail = /^[a-z0-9](\.?[a-z0-9]){4,}@gmail\.com$/;
+      if (!regexGmail.test(email)) {
+          alert("Digite um Gmail válido com pelo menos 5 letras antes do @.");
+          return;
+      }
 
-    // 2. Bloqueio de e-mails de teste comuns
-    const emailsProibidos = ["teste@gmail.com", "admin@gmail.com", "12345@gmail.com"];
-    if (emailsProibidos.includes(email.toLowerCase())) {
-        alert("Este e-mail é inválido para recuperação por motivos de segurança.");
-        return;
-    }
+      // Gera o código aleatório de 4 dígitos
+      codigoSimulado = Math.floor(1000 + Math.random() * 9000).toString();
 
-    // 3. Simulação de verificação de servidor (Dá um ar profissional)
-    btn.innerText = "Verificando existência...";
-    btn.disabled = true;
+      btn.innerText = "Enviando código real...";
+      btn.disabled = true;
 
-    setTimeout(() => {
-        // Simula que o código foi "enviado" após checar o servidor
-        codigoSimulado = Math.floor(1000 + Math.random() * 9000).toString();
-        document.getElementById('preview-cod').innerText = codigoSimulado;
-        
-        document.getElementById('gmail-passo-1').style.display = 'none';
-        document.getElementById('gmail-passo-2').style.display = 'block';
-        
-        btn.innerText = "Enviar Código";
-        btn.disabled = false;
-    }, 2000); // 2 segundos de espera para simular a rede
-}
+      // O BOT ENVIA O E-MAIL AQUI
+      const serviceID = "service_bot";
+      const templateID = "template_yguxrkq";
+      const templateParams = {
+          to_email: email,
+          codigo_verificacao: codigoSimulado // Este nome deve ser igual ao que você pos no {{ }}
+      };
 
-
-        function validarCodigo() {
-            const codDigitado = document.getElementById('input-codigo').value;
-            if (codDigitado === codigoSimulado) {
-                const email = document.getElementById('input-gmail').value;
-                const user = localStorage.getItem('usuarioLogado');
-                let contas = JSON.parse(localStorage.getItem('usuariosCadastrados'));
-                let idx = contas.findIndex(u => u.nome === user);
-                
-                contas[idx].recoveryEmail = email;
-                contas[idx].verificado = true;
-                localStorage.setItem('usuariosCadastrados', JSON.stringify(contas));
-                
-                alert("Gmail vinculado com sucesso!");
-                fecharModais();
-                renderizarConfig();
-            } else {
-                alert("Código incorreto!");
-            }
-        }
-
-        function fecharModais() {
-            document.getElementById('backdrop').style.display = 'none';
-            document.getElementById('modal-gmail').style.display = 'none';
-        }
-
-        function renderizarConfig() {
-            const user = localStorage.getItem('usuarioLogado');
-            const conta = JSON.parse(localStorage.getItem('usuariosCadastrados')).find(u => u.nome === user);
-            const badge = document.getElementById('badge-verificado');
-            const txt = document.getElementById('txt-gmail-config');
-
-            if (conta.verificado) {
-                badge.innerText = "✓ VERIFICADO";
-                badge.style.background = "#dcfce7";
-                badge.style.color = "#15803d";
-                // Mascarar: usuario@gmail.com -> *********@gmail.com
-                const sufixo = conta.recoveryEmail.split("@")[1];
-                txt.innerText = "*********" + "@" + sufixo;
-            }
-        }
-
-        // --- SISTEMA ---
-        function abrirConfig() { 
-            document.getElementById('tela-config').style.display = 'block'; 
-            renderizarConfig();
-        }
-        function fecharConfig() { document.getElementById('tela-config').style.display = 'none'; }
-
-        function registrar() {
-            const u = document.getElementById('reg-user').value.trim();
-            const p = document.getElementById('reg-pass').value;
-            if(!u || !p) return;
-            let c = JSON.parse(localStorage.getItem('usuariosCadastrados') || '[]');
-            c.push({ nome: u, senhaHash: btoa(p), recoveryEmail: "", verificado: false });
-            localStorage.setItem('usuariosCadastrados', JSON.stringify(c));
-            irParaLogin();
-        }
-
-        function logar() {
-            const u = document.getElementById('login-user').value;
-            const p = document.getElementById('login-pass').value;
-            const c = JSON.parse(localStorage.getItem('usuariosCadastrados') || '[]');
-            if (c.find(x => x.nome === u && atob(x.senhaHash) === p)) {
-                localStorage.setItem('usuarioLogado', u);
-                mostrarBoasVindas(u);
-            } else { alert("Dados incorretos"); }
-        }
-
-        function mostrarBoasVindas(n) {
-            document.getElementById('tela-login').style.display='none';
-            document.getElementById('tela-registro').style.display='none';
-            document.getElementById('tela-welcome').style.display='block';
-            document.getElementById('msg-user').innerText = `Bem-vindo, @${n}`;
-            setInterval(() => {
-                document.getElementById('codigo-seguranca').innerText = Math.random().toString(36).substring(2, 8);
-            }, 500);
-        }
-
-        function verificarSessao() { if(localStorage.getItem('usuarioLogado')) mostrarBoasVindas(localStorage.getItem('usuarioLogado')); }
-        function deslogar() { localStorage.removeItem('usuarioLogado'); location.reload(); }
-        function irParaLogin() { document.getElementById('tela-registro').style.display='none'; document.getElementById('tela-login').style.display='block'; }
-        function irParaRegistro() { document.getElementById('tela-login').style.display='none'; document.getElementById('tela-registro').style.display='block'; }
-        
-        // Coordenadas
-        function abrirCoordenadas() { document.getElementById('tela-coordenadas').style.display='block'; setTimeout(()=>document.getElementById('msg-coord-aviso').style.display='none', 2000); }
-        function handleToque(e) {
-            const p = document.getElementById('pointer');
-            p.style.display='block'; p.style.left=e.clientX+'px'; p.style.top=e.clientY+'px';
-            p.innerText = `X:${e.clientX} Y:${e.clientY}`;
-            cliquesSair++;
-            setTimeout(()=>cliquesSair=0, 1500);
-            if(cliquesSair>=5) document.getElementById('tela-coordenadas').style.display='none';
-        }
-    </script>
+      emailjs.send(serviceID, templateID, templateParams)
+          .then(() => {
+              alert("O bot enviou o código para o seu e-mail!");
+              document.getElementById('gmail-passo-1').style.display = 'none';
+              document.getElementById('gmail-passo-2').style.display = 'block';
+              document.getElementById('preview-cod').innerText = "****"; // Não mostra na tela para ser seguro
+              btn.disabled = false;
+              btn.innerText = "Enviar Código";
+          }, (err) => {
+              alert("Erro no Bot: " + JSON.stringify(err));
+              btn.disabled = false;
+          });
+  }
+</script>
 </body>
 </html>
